@@ -75,13 +75,13 @@ async function getActiveCampaigns(accountId) {
 
 function detectCampaignType(campaigns) {
   if (!campaigns.length) return 'unknown';
-  const AWARENESS_OBJECTIVES = ['OUTCOME_AWARENESS', 'REACH', 'VIDEO_VIEWS', 'BRAND_AWARENESS', 'PAGE_LIKES'];
-  const LEADS_OBJECTIVES = ['OUTCOME_LEADS', 'LEAD_GENERATION', 'CONVERSIONS', 'OUTCOME_SALES'];
+  const AWARENESS_OBJECTIVES = new Set(['OUTCOME_AWARENESS', 'REACH', 'VIDEO_VIEWS', 'BRAND_AWARENESS', 'PAGE_LIKES']);
+  const LEADS_OBJECTIVES = new Set(['OUTCOME_LEADS', 'LEAD_GENERATION', 'CONVERSIONS', 'OUTCOME_SALES']);
   let hasLeads = false;
   let hasAwareness = false;
   for (const c of campaigns) {
-    if (LEADS_OBJECTIVES.includes(c.objective)) hasLeads = true;
-    if (AWARENESS_OBJECTIVES.includes(c.objective)) hasAwareness = true;
+    if (LEADS_OBJECTIVES.has(c.objective)) hasLeads = true;
+    if (AWARENESS_OBJECTIVES.has(c.objective)) hasAwareness = true;
   }
   if (hasLeads && hasAwareness) return 'mixed';
   if (hasLeads) return 'leads';
@@ -107,6 +107,62 @@ async function getAwarenessInsights(accountId, datePreset = 'today') {
     };
   } catch {
     return { spend: 0, impressions: 0, reach: 0, cpm: 0, videoViews: 0 };
+  }
+}
+
+const AWARENESS_OBJECTIVES = new Set(['OUTCOME_AWARENESS', 'REACH', 'VIDEO_VIEWS', 'BRAND_AWARENESS', 'PAGE_LIKES']);
+const LEADS_OBJECTIVES = new Set(['OUTCOME_LEADS', 'LEAD_GENERATION', 'CONVERSIONS', 'OUTCOME_SALES']);
+
+async function getCampaignTypeInsights(accountId, campaigns, type, datePreset = 'today') {
+  // For mixed accounts: fetch insights only for campaigns matching the requested type
+  const matchingCampaigns = campaigns.filter(c =>
+    type === 'awareness' ? AWARENESS_OBJECTIVES.has(c.objective) : LEADS_OBJECTIVES.has(c.objective)
+  );
+  if (!matchingCampaigns.length) return null;
+
+  const ids = matchingCampaigns.map(c => c.id);
+
+  try {
+    if (type === 'awareness') {
+      const data = await fetchGraph(`${accountId}/insights`, {
+        fields: 'spend,impressions,reach,cpm,video_play_actions',
+        date_preset: datePreset,
+        level: 'campaign',
+        filtering: JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: ids }]),
+      });
+      // Sum across matching campaigns
+      const rows = data?.data || [];
+      const totals = rows.reduce((acc, d) => {
+        acc.spend += parseFloat(d.spend || 0);
+        acc.impressions += parseInt(d.impressions || 0);
+        acc.reach += parseInt(d.reach || 0);
+        acc.videoViews += parseInt(d.video_play_actions?.find(a => a.action_type === 'video_view')?.value || 0);
+        return acc;
+      }, { spend: 0, impressions: 0, reach: 0, videoViews: 0 });
+      totals.cpm = totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0;
+      return totals;
+    } else {
+      const data = await fetchGraph(`${accountId}/insights`, {
+        fields: 'spend,impressions,clicks,ctr,cpm,actions,cost_per_action_type',
+        date_preset: datePreset,
+        level: 'campaign',
+        filtering: JSON.stringify([{ field: 'campaign.id', operator: 'IN', value: ids }]),
+      });
+      const rows = data?.data || [];
+      const totals = rows.reduce((acc, d) => {
+        acc.spend += parseFloat(d.spend || 0);
+        acc.impressions += parseInt(d.impressions || 0);
+        acc.clicks += parseInt(d.clicks || 0);
+        acc.leads += parseInt(d.actions?.find(a => a.action_type === 'lead')?.value || 0);
+        return acc;
+      }, { spend: 0, impressions: 0, clicks: 0, leads: 0, ctr: 0, cpm: 0, cpl: 0 });
+      totals.cpl = totals.leads > 0 ? totals.spend / totals.leads : 0;
+      totals.cpm = totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0;
+      totals.ctr = totals.clicks > 0 && totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0;
+      return totals;
+    }
+  } catch {
+    return null;
   }
 }
 
@@ -145,17 +201,24 @@ export default async function handler(req, res) {
       accounts.map(async (acct) => {
         const isActive = acct.account_status === 1;
 
-        const [todayInsights, mtdInsights, last7Insights, todayAwareness, mtdAwareness, campaigns, policyIssues] = await Promise.all([
+        const [todayInsights, mtdInsights, last7Insights, campaigns, policyIssues] = await Promise.all([
           isActive ? getAccountInsights(acct.id, 'today') : Promise.resolve(null),
           isActive ? getAccountInsights(acct.id, 'this_month') : Promise.resolve(null),
           isActive ? getAccountInsights(acct.id, 'last_7d') : Promise.resolve(null),
-          isActive ? getAwarenessInsights(acct.id, 'today') : Promise.resolve(null),
-          isActive ? getAwarenessInsights(acct.id, 'this_month') : Promise.resolve(null),
           isActive ? getActiveCampaigns(acct.id) : Promise.resolve([]),
           isActive ? getPolicyIssues(acct.id) : Promise.resolve([]),
         ]);
 
         const campaignType = detectCampaignType(campaigns);
+        const isMixed = campaignType === 'mixed';
+
+        // For mixed accounts: fetch type-specific insights so we don't blend leads + awareness data
+        const [todayAwareness, mtdAwareness, todayLeadsOnly, mtdLeadsOnly] = await Promise.all([
+          isActive && campaignType !== 'leads' ? (isMixed ? getCampaignTypeInsights(acct.id, campaigns, 'awareness', 'today') : getAwarenessInsights(acct.id, 'today')) : Promise.resolve(null),
+          isActive && campaignType !== 'leads' ? (isMixed ? getCampaignTypeInsights(acct.id, campaigns, 'awareness', 'this_month') : getAwarenessInsights(acct.id, 'this_month')) : Promise.resolve(null),
+          isActive && isMixed ? getCampaignTypeInsights(acct.id, campaigns, 'leads', 'today') : Promise.resolve(null),
+          isActive && isMixed ? getCampaignTypeInsights(acct.id, campaigns, 'leads', 'this_month') : Promise.resolve(null),
+        ]);
 
         // Compute health flags
         const flags = [];
@@ -205,8 +268,9 @@ export default async function handler(req, res) {
           lifetimeSpend: parseFloat(acct.amount_spent || 0) / 100,
           hasPaymentMethod: !!acct.funding_source_details?.id,
           campaignType,
-          today: todayInsights,
-          mtd: mtdInsights,
+          // For leads view: use leads-only data on mixed accounts, otherwise account-level
+          today: isMixed ? (todayLeadsOnly || todayInsights) : todayInsights,
+          mtd: isMixed ? (mtdLeadsOnly || mtdInsights) : mtdInsights,
           last7d: last7Insights,
           todayAwareness,
           mtdAwareness,
