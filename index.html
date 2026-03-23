@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meta Ads Dashboard — Lawn & Land Marketing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rethink+Sans:ital,wght@0,400;0,700;1,700;1,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ll-lime: #ACE71D; --ll-green: #5DCA49; --ll-green-dark: #16a34a;
+      --bg-base: #040a04; --bg-surface: rgba(255,255,255,0.04);
+      --bg-surface-hover: rgba(255,255,255,0.07); --border-card: rgba(20,83,45,0.30);
+      --text-primary: #ffffff; --text-secondary: rgba(255,255,255,0.65);
+      --text-muted: rgba(255,255,255,0.35); --text-accent: #ACE71D;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg-base); color: var(--text-primary); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+    .grain-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.035; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); background-size: 256px 256px; }
+    .ambient-glow { position: fixed; top: -20%; left: 50%; transform: translateX(-50%); width: 1200px; height: 700px; background: radial-gradient(ellipse at center, rgba(22,163,74,0.08) 0%, rgba(22,163,74,0.03) 40%, transparent 70%); pointer-events: none; z-index: 0; }
+
+    .page { position: relative; z-index: 10; max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    /* HEADER */
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; flex-wrap: wrap; gap: 16px; }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-logo { height: 32px; width: auto; }
+    .header-title { font-family: 'Rethink Sans', sans-serif; font-weight: 800; font-style: italic; font-size: 1.4rem; color: #fff; }
+    .header-title span { color: var(--ll-lime); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .last-updated { font-size: 0.75rem; color: var(--text-muted); }
+    .refresh-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(172,231,29,0.10); border: 1px solid rgba(172,231,29,0.25); border-radius: 8px; color: var(--ll-lime); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
+    .refresh-btn:hover { background: rgba(172,231,29,0.18); }
+    .refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* SUMMARY STRIP */
+    .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .summary-card { background: var(--bg-surface); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; }
+    .summary-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+    .summary-value { font-family: 'Rethink Sans', sans-serif; font-weight: 800; font-style: italic; font-size: 1.8rem; color: #fff; }
+    .summary-value.green { color: var(--ll-lime); }
+    .summary-value.red { color: #ef4444; }
+    .summary-value.yellow { color: #eab308; }
+    .summary-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* FILTER BAR */
+    .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+    .filter-btn { padding: 7px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: var(--text-muted); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; white-space: nowrap; }
+    .filter-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .filter-btn.active { background: rgba(172,231,29,0.12); border-color: rgba(172,231,29,0.35); color: var(--ll-lime); }
+    .filter-btn.active.red { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.35); color: #ef4444; }
+    .filter-btn.active.yellow { background: rgba(234,179,8,0.12); border-color: rgba(234,179,8,0.35); color: #eab308; }
+    .search-input { padding: 7px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(22,163,74,0.20); border-radius: 8px; color: #fff; font-family: 'Inter', sans-serif; font-size: 0.82rem; outline: none; min-width: 200px; transition: border-color 0.15s; }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-input:focus { border-color: rgba(22,163,74,0.55); }
+
+    /* ACCOUNT TABLE */
+    .accounts-table { width: 100%; border-collapse: collapse; }
+    .table-header { display: grid; grid-template-columns: 2fr 90px 100px 100px 90px 80px 90px 80px 100px; gap: 0; padding: 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 4px; }
+    .th { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+    .th.right { text-align: right; }
+
+    .account-row { display: grid; grid-template-columns: 2fr 90px 100px 100px 90px 80px 90px 80px 100px; gap: 0; align-items: center; padding: 14px 20px; background: var(--bg-surface); border: 1px solid var(--border-card); border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .account-row:hover { background: var(--bg-surface-hover); border-color: rgba(22,163,74,0.25); }
+    .account-row.critical { border-color: rgba(239,68,68,0.30); }
+    .account-row.warning { border-color: rgba(234,179,8,0.25); }
+    .account-row.hidden { display: none; }
+
+    .acct-name { font-size: 0.9rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px; }
+    .acct-name small { display: block; font-size: 0.7rem; font-weight: 400; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .td { font-size: 0.85rem; color: var(--text-secondary); }
+    .td.right { text-align: right; }
+    .td.mono { font-variant-numeric: tabular-nums; }
+
+    /* Health badge */
+    .health-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+    .health-badge.healthy { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
+    .health-badge.warning { background: rgba(234,179,8,0.12); color: #eab308; border: 1px solid rgba(234,179,8,0.25); }
+    .health-badge.critical { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+    .health-badge.inactive { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.10); }
+
+    /* Flags */
+    .flag-list { display: flex; flex-direction: column; gap: 3px; }
+    .flag-item { font-size: 0.72rem; color: rgba(255,255,255,0.60); }
+    .flag-item.error { color: #f87171; }
+    .flag-item.warning { color: #fbbf24; }
+
+    /* ACCOUNT DETAIL PANEL */
+    .detail-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; backdrop-filter: blur(4px); }
+    .detail-overlay.open { display: flex; align-items: flex-start; justify-content: flex-end; }
+    .detail-panel { width: 480px; max-width: 100vw; height: 100vh; overflow-y: auto; background: #080f08; border-left: 1px solid rgba(20,83,45,0.40); padding: 32px 28px; }
+    .detail-close { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 24px; }
+    .close-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; padding: 6px 12px; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .close-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .detail-name { font-family: 'Rethink Sans', sans-serif; font-weight: 800; font-style: italic; font-size: 1.4rem; color: #fff; margin-bottom: 20px; }
+    .detail-section { margin-bottom: 24px; }
+    .detail-section-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+    .detail-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .detail-stat-row:last-child { border-bottom: none; }
+    .detail-stat-label { font-size: 0.82rem; color: var(--text-secondary); }
+    .detail-stat-value { font-size: 0.9rem; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
+    .campaign-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(172,231,29,0.07); border: 1px solid rgba(172,231,29,0.18); border-radius: 999px; font-size: 0.72rem; color: rgba(255,255,255,0.70); margin: 3px 4px 3px 0; }
+
+    /* LOADING STATE */
+    .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px; gap: 16px; }
+    .loader-ring { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.06); border-top-color: var(--ll-lime); border-radius: 50%; animation: spin 0.9s linear infinite; }
+    .loading-text { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* ERROR STATE */
+    .error-state { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 12px; padding: 24px; text-align: center; }
+
+    /* ALERT BANNER */
+    .alert-banner { display: none; background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.30); border-radius: 10px; padding: 14px 20px; margin-bottom: 24px; font-size: 0.85rem; color: #f87171; }
+    .alert-banner.show { display: flex; align-items: center; gap: 10px; }
+
+    /* Mobile */
+    @media (max-width: 900px) {
+      .table-header, .account-row { grid-template-columns: 1fr 90px 100px 80px; }
+      .td.hide-mobile, .th.hide-mobile { display: none; }
+    }
+    @media (max-width: 600px) {
+      .table-header, .account-row { grid-template-columns: 1fr 90px; }
+      .summary-strip { grid-template-columns: 1fr 1fr; }
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    ::-webkit-scrollbar-thumb { background: rgba(22,163,74,0.30); border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="grain-overlay" aria-hidden="true"></div>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <div class="page">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <img src="https://raw.githubusercontent.com/LawnAndLandMarketing/brand-assets/main/logos/horizontal.png" alt="L&L" class="header-logo" />
+        <div class="header-title">Meta Ads <span>Dashboard</span></div>
+      </div>
+      <div class="header-right">
+        <span class="last-updated" id="last-updated">Loading…</span>
+        <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
+          <svg id="refresh-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- ALERT BANNER -->
+    <div class="alert-banner" id="alert-banner">
+      <span>⚠️</span>
+      <span id="alert-text"></span>
+    </div>
+
+    <!-- SUMMARY STRIP -->
+    <div class="summary-strip" id="summary-strip">
+      <div class="summary-card"><div class="summary-label">Total Accounts</div><div class="summary-value" id="sum-total">—</div></div>
+      <div class="summary-card"><div class="summary-label">🔴 Critical</div><div class="summary-value red" id="sum-critical">—</div></div>
+      <div class="summary-card"><div class="summary-label">⚠️ Warnings</div><div class="summary-value yellow" id="sum-warning">—</div></div>
+      <div class="summary-card"><div class="summary-label">✅ Healthy</div><div class="summary-value green" id="sum-healthy">—</div></div>
+      <div class="summary-card"><div class="summary-label">Spend Today</div><div class="summary-value green" id="sum-spend-today">—</div><div class="summary-sub" id="sum-leads-today"></div></div>
+      <div class="summary-card"><div class="summary-label">Spend MTD</div><div class="summary-value" id="sum-spend-mtd">—</div><div class="summary-sub" id="sum-leads-mtd"></div></div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All Accounts</button>
+      <button class="filter-btn red" data-filter="critical" onclick="setFilter('critical', this)">🔴 Critical</button>
+      <button class="filter-btn yellow" data-filter="warning" onclick="setFilter('warning', this)">⚠️ Warnings</button>
+      <button class="filter-btn" data-filter="healthy" onclick="setFilter('healthy', this)">✅ Healthy</button>
+      <button class="filter-btn" data-filter="inactive" onclick="setFilter('inactive', this)">Inactive</button>
+      <input type="search" class="search-input" placeholder="Search accounts…" id="search-input" oninput="filterAccounts()" />
+    </div>
+
+    <!-- TABLE HEADER -->
+    <div class="table-header">
+      <div class="th">Account</div>
+      <div class="th">Health</div>
+      <div class="th right hide-mobile">Spend Today</div>
+      <div class="th right hide-mobile">Spend MTD</div>
+      <div class="th right hide-mobile">Leads Today</div>
+      <div class="th right hide-mobile">CPL Today</div>
+      <div class="th right hide-mobile">7d CPL</div>
+      <div class="th right hide-mobile">Campaigns</div>
+      <div class="th right">Issues</div>
+    </div>
+
+    <!-- ACCOUNTS LIST -->
+    <div id="accounts-list">
+      <div class="loading-state">
+        <div class="loader-ring"></div>
+        <div class="loading-text">Fetching account data from Meta…</div>
+      </div>
+    </div>
+
+  </div><!-- /page -->
+
+  <!-- DETAIL PANEL -->
+  <div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+    <div class="detail-panel" id="detail-panel">
+      <div class="detail-close"><button class="close-btn" onclick="closeDetailPanel()">✕ Close</button></div>
+      <div class="detail-name" id="detail-name"></div>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <script>
+    let allAccounts = [];
+    let currentFilter = 'all';
+
+    function fmt$(n) {
+      if (!n && n !== 0) return '—';
+      return '$' + parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+    function fmtN(n) {
+      if (!n && n !== 0) return '—';
+      return parseInt(n).toLocaleString('en-US');
+    }
+    function fmtPct(n) {
+      if (!n && n !== 0) return '—';
+      return parseFloat(n).toFixed(2) + '%';
+    }
+
+    async function loadData() {
+      const btn = document.getElementById('refresh-btn');
+      const icon = document.getElementById('refresh-icon');
+      btn.classList.add('spinning');
+      icon.style.animation = 'spin 1s linear infinite';
+
+      try {
+        const res = await fetch('/api/meta');
+        if (!res.ok) throw new Error('API error ' + res.status);
+        const data = await res.json();
+
+        allAccounts = data.accounts || [];
+        renderSummary(data.summary);
+        renderAccounts(allAccounts);
+
+        // Alert banner
+        const critCount = data.summary?.critical || 0;
+        const warnCount = data.summary?.warning || 0;
+        if (critCount > 0 || warnCount > 0) {
+          document.getElementById('alert-banner').classList.add('show');
+          document.getElementById('alert-text').textContent =
+            `${critCount} critical issue${critCount !== 1 ? 's' : ''} and ${warnCount} warning${warnCount !== 1 ? 's' : ''} require attention.`;
+        } else {
+          document.getElementById('alert-banner').classList.remove('show');
+        }
+
+        const fetched = new Date(data.fetchedAt);
+        document.getElementById('last-updated').textContent = 'Updated ' + fetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      } catch (err) {
+        document.getElementById('accounts-list').innerHTML = `<div class="error-state"><p style="color:#f87171;font-weight:600;margin-bottom:8px;">Failed to load data</p><p style="color:rgba(255,255,255,0.50);font-size:0.85rem;">${err.message}</p></div>`;
+      } finally {
+        btn.classList.remove('spinning');
+        icon.style.animation = '';
+      }
+    }
+
+    function renderSummary(s) {
+      if (!s) return;
+      document.getElementById('sum-total').textContent = s.total || 0;
+      document.getElementById('sum-critical').textContent = s.critical || 0;
+      document.getElementById('sum-warning').textContent = s.warning || 0;
+      document.getElementById('sum-healthy').textContent = s.healthy || 0;
+      document.getElementById('sum-spend-today').textContent = fmt$(s.totalSpendToday);
+      document.getElementById('sum-leads-today').textContent = (s.totalLeadsToday || 0) + ' leads';
+      document.getElementById('sum-spend-mtd').textContent = fmt$(s.totalSpendMtd);
+      document.getElementById('sum-leads-mtd').textContent = (s.totalLeadsMtd || 0) + ' leads MTD';
+    }
+
+    function renderAccounts(accounts) {
+      const list = document.getElementById('accounts-list');
+      if (!accounts.length) {
+        list.innerHTML = '<div class="loading-state"><div class="loading-text">No accounts found.</div></div>';
+        return;
+      }
+
+      list.innerHTML = accounts.map((a, i) => {
+        const avg7dCpl = (a.last7d?.leads > 0) ? (a.last7d.spend / a.last7d.leads) : 0;
+        const flagsHtml = (a.flags || []).map(f =>
+          `<div class="flag-item ${f.type}">${f.message}</div>`
+        ).join('');
+
+        const healthLabel = { healthy: '✅ Healthy', warning: '⚠️ Warning', critical: '🔴 Critical', inactive: '— Inactive' };
+
+        return `<div class="account-row ${a.health}" data-health="${a.health}" data-name="${a.name.toLowerCase()}" data-index="${i}" onclick="openDetail(${i})">
+          <div class="acct-name">${a.name}<small>${a.activeCampaigns > 0 ? a.activeCampaigns + ' active campaign' + (a.activeCampaigns !== 1 ? 's' : '') : 'No active campaigns'}</small></div>
+          <div class="td"><span class="health-badge ${a.health}">${healthLabel[a.health] || a.health}</span></div>
+          <div class="td right mono hide-mobile">${a.today ? fmt$(a.today.spend) : '—'}</div>
+          <div class="td right mono hide-mobile">${a.mtd ? fmt$(a.mtd.spend) : '—'}</div>
+          <div class="td right mono hide-mobile">${a.today ? fmtN(a.today.leads) : '—'}</div>
+          <div class="td right mono hide-mobile">${(a.today?.cpl > 0) ? fmt$(a.today.cpl) : '—'}</div>
+          <div class="td right mono hide-mobile">${avg7dCpl > 0 ? fmt$(avg7dCpl) : '—'}</div>
+          <div class="td right mono hide-mobile">${a.activeCampaigns || 0}</div>
+          <div class="td right"><div class="flag-list">${flagsHtml || '<span class="flag-item" style="color:rgba(255,255,255,0.25);">—</span>'}</div></div>
+        </div>`;
+      }).join('');
+    }
+
+    function setFilter(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filterAccounts();
+    }
+
+    function filterAccounts() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      document.querySelectorAll('.account-row').forEach(row => {
+        const matchesFilter = currentFilter === 'all' || row.dataset.health === currentFilter;
+        const matchesSearch = !search || row.dataset.name.includes(search);
+        row.classList.toggle('hidden', !(matchesFilter && matchesSearch));
+      });
+    }
+
+    function openDetail(index) {
+      const a = allAccounts[index];
+      if (!a) return;
+
+      const avg7dCpl = (a.last7d?.leads > 0) ? (a.last7d.spend / a.last7d.leads) : 0;
+      const campaigns = (a.campaignNames || []).map(n => `<span class="campaign-chip">📢 ${n}</span>`).join('');
+
+      const flagsHtml = (a.flags || []).length > 0
+        ? (a.flags.map(f => `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="color:${f.type === 'error' ? '#f87171' : '#fbbf24'};font-size:1rem;">●</span><span style="font-size:0.85rem;color:${f.type === 'error' ? '#f87171' : '#fbbf24'}">${f.message}</span></div>`).join(''))
+        : '<p style="font-size:0.85rem;color:rgba(255,255,255,0.35)">No issues detected ✅</p>';
+
+      document.getElementById('detail-name').textContent = a.name;
+      document.getElementById('detail-content').innerHTML = `
+        <div class="detail-section">
+          <div class="detail-section-label">Account Status</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <span class="health-badge ${a.health}">${a.health.toUpperCase()}</span>
+            ${a.hasPaymentMethod ? '<span class="health-badge healthy" style="font-size:0.65rem">💳 Payment OK</span>' : '<span class="health-badge critical" style="font-size:0.65rem">💳 No Payment</span>'}
+          </div>
+          ${flagsHtml}
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-label">Today's Performance</div>
+          ${a.today ? `
+          <div class="detail-stat-row"><span class="detail-stat-label">Spend</span><span class="detail-stat-value">${fmt$(a.today.spend)}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Leads</span><span class="detail-stat-value">${fmtN(a.today.leads)}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">CPL</span><span class="detail-stat-value">${a.today.cpl > 0 ? fmt$(a.today.cpl) : '—'}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">CTR</span><span class="detail-stat-value">${fmtPct(a.today.ctr)}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">CPM</span><span class="detail-stat-value">${fmt$(a.today.cpm)}</span></div>
+          ` : '<p style="font-size:0.85rem;color:rgba(255,255,255,0.35)">Account inactive — no data</p>'}
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-label">Month to Date</div>
+          ${a.mtd ? `
+          <div class="detail-stat-row"><span class="detail-stat-label">Spend MTD</span><span class="detail-stat-value">${fmt$(a.mtd.spend)}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Leads MTD</span><span class="detail-stat-value">${fmtN(a.mtd.leads)}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Avg CPL MTD</span><span class="detail-stat-value">${a.mtd.leads > 0 ? fmt$(a.mtd.spend / a.mtd.leads) : '—'}</span></div>
+          ` : '—'}
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-label">Last 7 Days</div>
+          ${a.last7d ? `
+          <div class="detail-stat-row"><span class="detail-stat-label">Spend</span><span class="detail-stat-value">${fmt$(a.last7d.spend)}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Leads</span><span class="detail-stat-value">${fmtN(a.last7d.leads)}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Avg CPL</span><span class="detail-stat-value">${avg7dCpl > 0 ? fmt$(avg7dCpl) : '—'}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Impressions</span><span class="detail-stat-value">${fmtN(a.last7d.impressions)}</span></div>
+          ` : '—'}
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-label">Active Campaigns (${a.activeCampaigns})</div>
+          ${campaigns || '<p style="font-size:0.85rem;color:rgba(255,255,255,0.35)">No active campaigns</p>'}
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-label">Account Info</div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Account ID</span><span class="detail-stat-value" style="font-size:0.78rem;font-family:monospace">${a.id}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Currency</span><span class="detail-stat-value">${a.currency}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Lifetime Spend</span><span class="detail-stat-value">${fmt$(a.lifetimeSpend)}</span></div>
+          <div class="detail-stat-row"><span class="detail-stat-label">Policy Issues</span><span class="detail-stat-value">${a.policyIssues > 0 ? `🚫 ${a.policyIssues} ad(s)` : '✅ None'}</span></div>
+        </div>
+
+        <div style="margin-top:16px">
+          <a href="https://adsmanager.facebook.com/adsmanager/accounts?act=${a.id.replace('act_','')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(172,231,29,0.10);border:1px solid rgba(172,231,29,0.25);border-radius:8px;color:var(--ll-lime);font-size:0.82rem;font-weight:600;text-decoration:none;transition:all 0.15s" onmouseover="this.style.background='rgba(172,231,29,0.18)'" onmouseout="this.style.background='rgba(172,231,29,0.10)'">
+            Open in Ads Manager →
+          </a>
+        </div>
+      `;
+
+      document.getElementById('detail-overlay').classList.add('open');
+    }
+
+    function closeDetail(e) {
+      if (e.target === document.getElementById('detail-overlay')) closeDetailPanel();
+    }
+    function closeDetailPanel() {
+      document.getElementById('detail-overlay').classList.remove('open');
+    }
+
+    // Auto-refresh every 5 min
+    loadData();
+    setInterval(loadData, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
