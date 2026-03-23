@@ -234,6 +234,7 @@
         // If currently showing this account and filter isn't 'ignored', stay in current view
       }
       saveIgnored();
+      renderSummary();
       renderAccounts(allAccounts);
       filterAccounts();
     }
@@ -263,12 +264,13 @@
         const data = await res.json();
 
         allAccounts = data.accounts || [];
-        renderSummary(data.summary);
+        renderSummary();
         renderAccounts(allAccounts);
 
         // Alert banner
-        const critCount = data.summary?.critical || 0;
-        const warnCount = data.summary?.warning || 0;
+        const visibleAccounts = allAccounts.filter(a => !ignoredIds.has(a.id));
+        const critCount = visibleAccounts.filter(a => a.health === 'critical').length;
+        const warnCount = visibleAccounts.filter(a => a.health === 'warning').length;
         if (critCount > 0 || warnCount > 0) {
           document.getElementById('alert-banner').classList.add('show');
           document.getElementById('alert-text').textContent =
@@ -287,16 +289,21 @@
       }
     }
 
-    function renderSummary(s) {
-      if (!s) return;
-      document.getElementById('sum-total').textContent = s.total || 0;
-      document.getElementById('sum-critical').textContent = s.critical || 0;
-      document.getElementById('sum-warning').textContent = s.warning || 0;
-      document.getElementById('sum-healthy').textContent = s.healthy || 0;
-      document.getElementById('sum-spend-today').textContent = fmt$(s.totalSpendToday);
-      document.getElementById('sum-leads-today').textContent = (s.totalLeadsToday || 0) + ' leads';
-      document.getElementById('sum-spend-mtd').textContent = fmt$(s.totalSpendMtd);
-      document.getElementById('sum-leads-mtd').textContent = (s.totalLeadsMtd || 0) + ' leads MTD';
+    function renderSummary() {
+      // Always compute from non-ignored accounts so summary stays accurate
+      const visible = allAccounts.filter(a => !ignoredIds.has(a.id));
+      document.getElementById('sum-total').textContent = visible.length;
+      document.getElementById('sum-critical').textContent = visible.filter(a => a.health === 'critical').length;
+      document.getElementById('sum-warning').textContent = visible.filter(a => a.health === 'warning').length;
+      document.getElementById('sum-healthy').textContent = visible.filter(a => a.health === 'healthy').length;
+      const spendToday = visible.reduce((s, a) => s + (a.today?.spend || 0), 0);
+      const leadsToday = visible.reduce((s, a) => s + (a.today?.leads || 0), 0);
+      const spendMtd = visible.reduce((s, a) => s + (a.mtd?.spend || 0), 0);
+      const leadsMtd = visible.reduce((s, a) => s + (a.mtd?.leads || 0), 0);
+      document.getElementById('sum-spend-today').textContent = fmt$(spendToday);
+      document.getElementById('sum-leads-today').textContent = leadsToday + ' leads';
+      document.getElementById('sum-spend-mtd').textContent = fmt$(spendMtd);
+      document.getElementById('sum-leads-mtd').textContent = leadsMtd + ' leads MTD';
     }
 
     function renderAccounts(accounts) {
