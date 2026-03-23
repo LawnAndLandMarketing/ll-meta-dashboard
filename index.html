@@ -60,11 +60,12 @@
 
     /* ACCOUNT TABLE */
     .accounts-table { width: 100%; border-collapse: collapse; }
-    .table-header { display: grid; grid-template-columns: 2fr 90px 100px 100px 90px 80px 90px 80px 100px 48px; gap: 0; padding: 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 4px; }
+    .table-header { display: grid; grid-template-columns: 2fr 90px 100px 100px 90px 80px 90px 80px 100px 84px; gap: 0; padding: 8px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 4px; }
     .th { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
     .th.right { text-align: right; }
 
-    .account-row { display: grid; grid-template-columns: 2fr 90px 100px 100px 90px 80px 90px 80px 100px 48px; gap: 0; align-items: center; padding: 14px 20px; background: var(--bg-surface); border: 1px solid var(--border-card); border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .account-row { display: grid; grid-template-columns: 2fr 90px 100px 100px 90px 80px 90px 80px 100px 84px; gap: 0; align-items: center; padding: 14px 20px; background: var(--bg-surface); border: 1px solid var(--border-card); border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .account-row.ignored { opacity: 0.4; }
     .account-row:hover { background: var(--bg-surface-hover); border-color: rgba(22,163,74,0.25); }
     .account-row.critical { border-color: rgba(239,68,68,0.30); }
     .account-row.warning { border-color: rgba(234,179,8,0.25); }
@@ -119,11 +120,11 @@
 
     /* Mobile */
     @media (max-width: 900px) {
-      .table-header, .account-row { grid-template-columns: 1fr 90px 100px 80px 48px; }
+      .table-header, .account-row { grid-template-columns: 1fr 90px 100px 80px 84px; }
       .td.hide-mobile, .th.hide-mobile { display: none; }
     }
     @media (max-width: 600px) {
-      .table-header, .account-row { grid-template-columns: 1fr 90px 48px; }
+      .table-header, .account-row { grid-template-columns: 1fr 90px 84px; }
       .summary-strip { grid-template-columns: 1fr 1fr; }
     }
 
@@ -176,6 +177,7 @@
       <button class="filter-btn yellow" data-filter="warning" onclick="setFilter('warning', this)">⚠️ Warnings</button>
       <button class="filter-btn" data-filter="healthy" onclick="setFilter('healthy', this)">✅ Healthy</button>
       <button class="filter-btn" data-filter="inactive" onclick="setFilter('inactive', this)">Inactive</button>
+      <button class="filter-btn" data-filter="ignored" onclick="setFilter('ignored', this)" id="ignored-filter-btn" style="display:none">🙈 Ignored</button>
       <input type="search" class="search-input" placeholder="Search accounts…" id="search-input" oninput="filterAccounts()" />
     </div>
 
@@ -215,6 +217,25 @@
   <script>
     let allAccounts = [];
     let currentFilter = 'all';
+    let ignoredIds = new Set(JSON.parse(localStorage.getItem('ll_meta_ignored') || '[]'));
+
+    function saveIgnored() {
+      localStorage.setItem('ll_meta_ignored', JSON.stringify([...ignoredIds]));
+      // Show/hide "Ignored" filter button
+      const btn = document.getElementById('ignored-filter-btn');
+      if (btn) btn.style.display = ignoredIds.size > 0 ? 'inline-flex' : 'none';
+    }
+
+    function toggleIgnore(accountId, accountName, btn) {
+      if (ignoredIds.has(accountId)) {
+        ignoredIds.delete(accountId);
+      } else {
+        ignoredIds.add(accountId);
+        // If currently showing this account and filter isn't 'ignored', stay in current view
+      }
+      saveIgnored();
+      renderAccounts(allAccounts); // re-render with updated ignore state
+    }
 
     function fmt$(n) {
       if (!n && n !== 0) return '—';
@@ -292,7 +313,8 @@
 
         const healthLabel = { healthy: '✅ Healthy', warning: '⚠️ Warning', critical: '🔴 Critical', inactive: '— Inactive' };
 
-        return `<div class="account-row ${a.health}" data-health="${a.health}" data-name="${a.name.toLowerCase()}" data-index="${i}" onclick="openDetail(${i})">
+        const isIgnored = ignoredIds.has(a.id);
+        return `<div class="account-row ${a.health}${isIgnored ? ' ignored' : ''}" data-health="${a.health}" data-name="${a.name.toLowerCase()}" data-index="${i}" data-ignored="${isIgnored}" onclick="openDetail(${i})">
           <div class="acct-name">${a.name}<small>${a.activeCampaigns > 0 ? a.activeCampaigns + ' active campaign' + (a.activeCampaigns !== 1 ? 's' : '') : 'No active campaigns'}</small></div>
           <div class="td"><span class="health-badge ${a.health}">${healthLabel[a.health] || a.health}</span></div>
           <div class="td right mono hide-mobile">${a.today ? fmt$(a.today.spend) : '—'}</div>
@@ -302,7 +324,10 @@
           <div class="td right mono hide-mobile">${avg7dCpl > 0 ? fmt$(avg7dCpl) : '—'}</div>
           <div class="td right mono hide-mobile">${a.activeCampaigns || 0}</div>
           <div class="td right"><div class="flag-list">${flagsHtml || '<span class="flag-item" style="color:rgba(255,255,255,0.25);">—</span>'}</div></div>
-          <div class="td" style="display:flex;align-items:center;justify-content:flex-end;" onclick="event.stopPropagation()">
+          <div class="td" style="display:flex;align-items:center;justify-content:flex-end;gap:6px;" onclick="event.stopPropagation()">
+            <button onclick="toggleIgnore('${a.id}', '${a.name.replace(/'/g, "\\'")}', this)" title="${ignoredIds.has(a.id) ? 'Un-ignore account' : 'Ignore this account'}" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:${ignoredIds.has(a.id) ? 'rgba(234,179,8,0.15)' : 'rgba(255,255,255,0.05)'};border:1px solid ${ignoredIds.has(a.id) ? 'rgba(234,179,8,0.35)' : 'rgba(255,255,255,0.10)'};border-radius:6px;color:${ignoredIds.has(a.id) ? '#eab308' : 'rgba(255,255,255,0.30)'};cursor:pointer;transition:all 0.15s;font-size:0.9rem;" onmouseover="this.style.background='rgba(234,179,8,0.20)';this.style.color='#eab308'" onmouseout="this.style.background='${ignoredIds.has(a.id) ? 'rgba(234,179,8,0.15)' : 'rgba(255,255,255,0.05)'}';this.style.color='${ignoredIds.has(a.id) ? '#eab308' : 'rgba(255,255,255,0.30)'}'">
+              ${ignoredIds.has(a.id) ? '👁' : '🙈'}
+            </button>
             <a href="https://adsmanager.facebook.com/adsmanager/accounts?act=${a.id.replace('act_','')}" target="_blank" rel="noopener" title="Open in Ads Manager" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:rgba(172,231,29,0.08);border:1px solid rgba(172,231,29,0.20);border-radius:6px;color:var(--ll-lime);text-decoration:none;transition:all 0.15s;font-size:0.75rem;" onmouseover="this.style.background='rgba(172,231,29,0.20)'" onmouseout="this.style.background='rgba(172,231,29,0.08)'">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>
@@ -321,7 +346,15 @@
     function filterAccounts() {
       const search = document.getElementById('search-input').value.toLowerCase();
       document.querySelectorAll('.account-row').forEach(row => {
-        const matchesFilter = currentFilter === 'all' || row.dataset.health === currentFilter;
+        const isIgnored = row.dataset.ignored === 'true';
+        let matchesFilter;
+        if (currentFilter === 'ignored') {
+          matchesFilter = isIgnored;
+        } else if (currentFilter === 'all') {
+          matchesFilter = !isIgnored;
+        } else {
+          matchesFilter = !isIgnored && row.dataset.health === currentFilter;
+        }
         const matchesSearch = !search || row.dataset.name.includes(search);
         row.classList.toggle('hidden', !(matchesFilter && matchesSearch));
       });
@@ -408,6 +441,9 @@
     function closeDetailPanel() {
       document.getElementById('detail-overlay').classList.remove('open');
     }
+
+    // Show ignored filter button if any accounts are ignored on load
+    saveIgnored();
 
     // Auto-refresh every 5 min
     loadData();
