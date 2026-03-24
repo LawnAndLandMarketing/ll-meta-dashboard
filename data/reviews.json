@@ -1,1 +1,215 @@
-{"reviews":[],"lastUpdated":null}
+{
+  "reviews": [
+    {
+      "session": "Mar 24, 3:01 AM",
+      "reviewedAt": "2026-03-24T07:01:21.439Z",
+      "timeOfDay": "morning",
+      "summary": "7 critical issues and 8 warnings across the portfolio. 19 accounts clean. $92 spent today, 2 leads.",
+      "stats": {
+        "total": 34,
+        "critical": 7,
+        "warnings": 8,
+        "healthy": 19,
+        "spendToday": 92.47,
+        "leadsToday": 2
+      },
+      "critical": [
+        {
+          "name": "Premium Landscape Services",
+          "flags": [
+            {
+              "type": "error",
+              "code": "ACCOUNT_RESTRICTED",
+              "msg": "Account RESTRICTED"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "Augusta Grass Masters",
+          "flags": [
+            {
+              "type": "error",
+              "code": "ACCOUNT_RESTRICTED",
+              "msg": "Account RESTRICTED"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "Independent Lawn Service",
+          "flags": [
+            {
+              "type": "error",
+              "code": "ACCOUNT_RESTRICTED",
+              "msg": "Account RESTRICTED"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "From The Ground Up - Landscape",
+          "flags": [
+            {
+              "type": "error",
+              "code": "ACCOUNT_RESTRICTED",
+              "msg": "Account RESTRICTED"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "Outdoor Perfection Landscaping",
+          "flags": [
+            {
+              "type": "error",
+              "code": "ACCOUNT_RESTRICTED",
+              "msg": "Account RESTRICTED"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "B/A Farms",
+          "flags": [
+            {
+              "type": "error",
+              "code": "ACCOUNT_RESTRICTED",
+              "msg": "Account RESTRICTED"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "P&C Solutions",
+          "flags": [
+            {
+              "type": "error",
+              "code": "ACCOUNT_RESTRICTED",
+              "msg": "Account RESTRICTED"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        }
+      ],
+      "warnings": [
+        {
+          "name": "Pyramid Aluminum Ad Account",
+          "flags": [
+            {
+              "type": "info",
+              "code": "NO_CAMPAIGNS",
+              "msg": "No active campaigns"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "GroundSmith Landscaping",
+          "flags": [
+            {
+              "type": "info",
+              "code": "NO_CAMPAIGNS",
+              "msg": "No active campaigns"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "Lawn & Land Marketing",
+          "flags": [
+            {
+              "type": "warning",
+              "code": "POLICY",
+              "msg": "2 ads disapproved or with issues"
+            },
+            {
+              "type": "warning",
+              "code": "SPEND_NO_LEADS",
+              "msg": "$88 spent, 0 leads today"
+            }
+          ],
+          "spend": 87.99,
+          "leads": 0
+        },
+        {
+          "name": "Green Garden Landscaping - GHL",
+          "flags": [
+            {
+              "type": "info",
+              "code": "NO_CAMPAIGNS",
+              "msg": "No active campaigns"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "Secret Gardens",
+          "flags": [
+            {
+              "type": "info",
+              "code": "NO_CAMPAIGNS",
+              "msg": "No active campaigns"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "Artistic Landscape Features",
+          "flags": [
+            {
+              "type": "warning",
+              "code": "POLICY",
+              "msg": "2 ads disapproved or with issues"
+            }
+          ],
+          "spend": 0.2,
+          "leads": 0
+        },
+        {
+          "name": "Sutter Lawns (OLD)",
+          "flags": [
+            {
+              "type": "info",
+              "code": "NO_CAMPAIGNS",
+              "msg": "No active campaigns"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        },
+        {
+          "name": "Logan's Landscaping",
+          "flags": [
+            {
+              "type": "info",
+              "code": "NO_CAMPAIGNS",
+              "msg": "No active campaigns"
+            }
+          ],
+          "spend": 0,
+          "leads": 0
+        }
+      ],
+      "topPerformers": [
+        {
+          "name": "Renegade Landscapes",
+          "cpl": 0.32,
+          "leads": 2
+        }
+      ]
+    }
+  ],
+  "lastUpdated": "2026-03-24T07:01:21.439Z"
+}
