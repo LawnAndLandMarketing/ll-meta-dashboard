@@ -271,3 +271,15 @@ Contact: Matt Foreman (matt@lawnandlandmarketing.com)
 Internal tool — L&L use only.
 
 *Built March 22–23, 2026.*
+
+---
+
+## Repository Relationship
+
+- **Canonical product:** Meta Ads Dashboard
+- **This repo is the source of truth**
+- **Live URL:** https://meta.groundcontrol.agency
+- **Related repos:** None directly — reads from Meta Graph API, writes to `data/reviews.json` in this repo
+- **Depends on:** Vercel (hosting + serverless functions), Meta Graph API v21.0, OpenClaw/Kai (cron reviews)
+
+> **⚠️ Naming note:** Was `ll-meta-dashboard` — renamed to `meta-dashboard` April 2026.
